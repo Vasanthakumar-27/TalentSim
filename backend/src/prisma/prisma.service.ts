@@ -1,0 +1,26 @@
+import { INestApplication, Injectable, OnModuleInit } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+@Injectable()
+export class PrismaService extends PrismaClient implements OnModuleInit {
+  async onModuleInit() {
+    await this.$connect();
+  }
+
+  async enableShutdownHooks(app: INestApplication) {
+    const shutdown = async () => {
+      await app.close();
+      await this.$disconnect();
+    };
+
+    process.on('SIGINT', async () => {
+      await shutdown();
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', async () => {
+      await shutdown();
+      process.exit(0);
+    });
+  }
+}
