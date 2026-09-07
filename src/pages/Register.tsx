@@ -15,22 +15,20 @@ export const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const ok = register(name, email, password);
-      setIsLoading(false);
+    const ok = await register(name, email, password);
+    setIsLoading(false);
 
-      if (!ok) {
-        setError('Please enter your name, a valid email, and a password with at least 6 characters.');
-        return;
-      }
+    if (!ok) {
+      setError('Please enter your name, a valid email, and a password with at least 6 characters.');
+      return;
+    }
 
-      navigate('/dashboard');
-    }, 500);
+    navigate('/dashboard');
   };
 
   return (

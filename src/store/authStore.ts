@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { ApiError, authApi } from '../services/api';
 
 export type AuthUser = {
+  id?: string;
   name: string;
   email: string;
 };
@@ -8,12 +10,13 @@ export type AuthUser = {
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
-  register: (name: string, email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
 const STORAGE_KEY = 'talentsim-auth';
+const TOKEN_KEY = 'talentsim-token';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -53,7 +56,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isAuthenticated: Boolean(user),
-    login: (email, password) => {
+    login: async (email, password) => {
+      try {
+        const response = await authApi.login(email, password);
+        localStorage.setItem(TOKEN_KEY, response.accessToken);
+        setUser(response.user);
+        return true;
+      } catch (error) {
+        if (error instanceof ApiError) return false;
+        // Keep the local demo flow usable before the API environment is configured.
+      }
       const stored = readStoredUser();
       if (!stored) return false;
       if (stored.email !== normalizeEmail(email)) return false;
@@ -61,15 +73,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(stored);
       return true;
     },
-    register: (name, email, password) => {
+    register: async (name, email, password) => {
       const trimmedName = normalizeName(name);
       const trimmedEmail = normalizeEmail(email);
       if (!trimmedName || !trimmedEmail || !password || password.length < 6) return false;
+
+      try {
+        const response = await authApi.register(trimmedName, trimmedEmail, password);
+        localStorage.setItem(TOKEN_KEY, response.accessToken);
+        setUser(response.user);
+        return true;
+      } catch (error) {
+        if (error instanceof ApiError) return false;
+        // Keep the local demo flow usable before the API environment is configured.
+      }
+
       const nextUser = { name: trimmedName, email: trimmedEmail };
       setUser(nextUser);
       return true;
     },
-    logout: () => setUser(null),
+    logout: () => {
+      localStorage.removeItem(TOKEN_KEY);
+      setUser(null);
+    },
   }), [user]);
 
   return React.createElement(AuthContext.Provider, { value }, children);

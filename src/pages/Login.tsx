@@ -14,22 +14,20 @@ export const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const ok = login(email, password);
-      setIsLoading(false);
+    const ok = await login(email, password);
+    setIsLoading(false);
 
-      if (!ok) {
-        setError('Use a valid registered email and password (minimum 6 characters).');
-        return;
-      }
+    if (!ok) {
+      setError('Use a valid registered email and password (minimum 6 characters).');
+      return;
+    }
 
-      navigate('/dashboard');
-    }, 500);
+    navigate('/dashboard');
   };
 
   return (

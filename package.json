@@ -29,8 +29,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@esbuild/win32-x64": "^0.28.1",
-    "@rolldown/binding-win32-x64-msvc": "^1.2.3",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
