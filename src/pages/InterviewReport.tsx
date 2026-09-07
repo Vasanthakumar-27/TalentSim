@@ -29,16 +29,21 @@ export const InterviewReport: React.FC = () => {
   // Compute stats dynamically if answers exist
   const totalFillers = answers.reduce((acc, a) => acc + (a.fillerCount || 0), 0);
   const avgWpm = answers.length
-    ? Math.round(answers.reduce((acc, a) => acc + (a.wpm || 135), 0) / answers.length)
-    : 142;
-  const overallScore = answers.length ? 88 : 85;
+    ? Math.round(answers.reduce((acc, a) => acc + a.wpm, 0) / answers.length)
+    : 0;
+  const communicationScore = answers.length
+    ? Math.max(0, Math.min(100, Math.round(100 - (totalFillers / answers.length) * 8)))
+    : 0;
+  const overallScore = answers.length
+    ? Math.round((communicationScore + (eyeContactScore || 0)) / 2)
+    : 0;
 
   const radarData = [
-    { skill: 'Technical Depth', value: 90 },
-    { skill: 'Communication', value: Math.max(65, 100 - totalFillers * 5) },
-    { skill: 'Confidence', value: eyeContactScore || 91 },
-    { skill: 'STAR Structure', value: 78 },
-    { skill: 'Problem Solving', value: 89 },
+    { skill: 'Technical Depth', value: overallScore },
+    { skill: 'Communication', value: communicationScore },
+    { skill: 'Confidence', value: eyeContactScore },
+    { skill: 'STAR Structure', value: communicationScore },
+    { skill: 'Problem Solving', value: overallScore },
   ];
 
   const replayTimeline = [

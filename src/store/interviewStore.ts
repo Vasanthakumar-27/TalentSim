@@ -37,6 +37,7 @@ export interface InterviewState {
 
   // Session runtime
   sessionId: string | null;
+  setSessionId: (sessionId: string) => void;
   sessionState: 'IDLE' | 'INTRO' | 'QUESTION' | 'LISTENING' | 'PROCESSING' | 'FOLLOW_UP' | 'COMPLETE';
   setSessionState: (state: InterviewState['sessionState']) => void;
 
@@ -84,6 +85,7 @@ export const useInterviewStore = create<InterviewState>((set) => ({
     set((state) => ({ config: { ...state.config, ...config } })),
 
   sessionId: null,
+  setSessionId: (sessionId) => set({ sessionId }),
   sessionState: 'IDLE',
   setSessionState: (sessionState) => set({ sessionState }),
 
@@ -105,8 +107,8 @@ export const useInterviewStore = create<InterviewState>((set) => ({
       sessionState: 'QUESTION',
     })),
 
-  eyeContactScore: 91,
-  confidenceScore: 84,
+  eyeContactScore: 0,
+  confidenceScore: 0,
   setEyeContactScore: (val) => set({ eyeContactScore: val }),
   setConfidenceScore: (val) => set({ confidenceScore: val }),
 
@@ -144,7 +146,7 @@ export const useInterviewStore = create<InterviewState>((set) => ({
       answers: [],
       timeline: [],
       sessionStartTime: null,
-      eyeContactScore: 91,
-      confidenceScore: 84,
+      eyeContactScore: 0,
+      confidenceScore: 0,
     }),
 }));

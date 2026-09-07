@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import { Card, CardTitle, CardDescription } from '../components/ui/Card';
@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { useAuth } from '../store/authStore';
+import { interviewsApi } from '../services/api';
 import {
   Play,
   Award,
@@ -46,59 +47,52 @@ const itemVariants: Variants = {
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const radarData = [
-    { skill: 'Technical', value: 90 },
-    { skill: 'Communication', value: 85 },
-    { skill: 'Confidence', value: 82 },
-    { skill: 'Behavioral', value: 86 },
-    { skill: 'Body Language', value: 88 },
-  ];
+  const [recentSessions, setRecentSessions] = useState<Array<{
+    id: string;
+    company: string;
+    role: string;
+    type: string;
+    score: number | null;
+    date: string;
+    recommendation: string;
+    badgeColor: 'green' | 'blue' | 'amber';
+  }>>([]);
 
-  const recentSessions = [
-    {
-      id: 'session-1',
-      company: 'Google',
-      role: 'Senior Frontend Engineer',
-      type: 'Technical & System Design',
-      score: 88,
-      date: 'Today, 4:15 PM',
-      duration: '25 min',
-      recommendation: 'Strong Hire',
-      badgeColor: 'green' as const,
-    },
-    {
-      id: 'session-2',
-      company: 'Amazon',
-      role: 'Software Development Engineer II',
-      type: 'Leadership Principles (Behavioral)',
-      score: 84,
-      date: 'Yesterday, 6:30 PM',
-      duration: '30 min',
-      recommendation: 'Hire',
-      badgeColor: 'blue' as const,
-    },
-    {
-      id: 'session-3',
-      company: 'Zoho',
-      role: 'Fullstack Developer',
-      type: 'HR & Technical Warmup',
-      score: 91,
-      date: 'Aug 5, 2:00 PM',
-      duration: '20 min',
-      recommendation: 'Strong Hire',
-      badgeColor: 'green' as const,
-    },
-    {
-      id: 'session-4',
-      company: 'Microsoft',
-      role: 'AI / ML Engineer',
-      type: 'System Architecture & Algorithmic Focus',
-      score: 79,
-      date: 'Aug 3, 11:00 AM',
-      duration: '40 min',
-      recommendation: 'Borderline',
-      badgeColor: 'amber' as const,
-    },
+  useEffect(() => {
+    const loadSessions = async () => {
+      try {
+        const sessions = await interviewsApi.list();
+        setRecentSessions(sessions.map((session) => {
+          const scores = session.answers.map((answer) => answer.aiScore).filter((score): score is number => score !== null);
+          const score = scores.length ? Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length) : null;
+          return {
+            id: session.id,
+            company: session.company || 'Independent Practice',
+            role: session.role,
+            type: session.interviewType,
+            score,
+            date: new Date(session.createdAt).toLocaleDateString(),
+            recommendation: score === null ? 'Awaiting review' : score >= 85 ? 'Strong Hire' : score >= 70 ? 'Hire' : 'Needs Practice',
+            badgeColor: score === null ? 'amber' : score >= 85 ? 'green' : 'blue',
+          };
+        }));
+      } catch {
+        setRecentSessions([]);
+      }
+    };
+    void loadSessions();
+  }, []);
+
+  const completedSessions = recentSessions.filter((session) => session.score !== null);
+  const averageScore = completedSessions.length
+    ? Math.round(completedSessions.reduce((sum, session) => sum + (session.score || 0), 0) / completedSessions.length)
+    : 0;
+  const radarData = [
+    { skill: 'Technical', value: averageScore },
+    { skill: 'Communication', value: averageScore },
+    { skill: 'Confidence', value: averageScore },
+    { skill: 'Behavioral', value: averageScore },
+    { skill: 'Body Language', value: averageScore },
   ];
 
   return (
@@ -147,10 +141,10 @@ export const Dashboard: React.FC = () => {
             <span className="text-xs font-semibold text-zinc-400">Interview Readiness</span>
             <Award className="w-4 h-4 text-orange-300" />
           </div>
-          <div className="text-3xl font-extrabold text-white mb-1">88%</div>
-          <ProgressBar value={88} variant="gradient" size="sm" className="my-2" />
+          <div className="text-3xl font-extrabold text-white mb-1">{averageScore || '--'}{averageScore ? '%' : ''}</div>
+          <ProgressBar value={averageScore} variant="gradient" size="sm" className="my-2" />
           <p className="text-xs text-emerald-400 font-medium flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" /> Tier-1 Ready (Top 12% percentile)
+            <TrendingUp className="w-3 h-3" /> Based on completed interviews
           </p>
         </Card>
 
@@ -171,8 +165,8 @@ export const Dashboard: React.FC = () => {
             <span className="text-xs font-semibold text-zinc-400">Recent Sessions</span>
             <Video className="w-4 h-4 text-yellow-300" />
           </div>
-          <div className="text-3xl font-extrabold text-white mb-1">12</div>
-          <p className="text-xs text-zinc-400">4 target companies practiced</p>
+          <div className="text-3xl font-extrabold text-white mb-1">{recentSessions.length}</div>
+          <p className="text-xs text-zinc-400">Saved interview sessions</p>
         </Card>
 
         {/* Practice Streak */}
@@ -181,8 +175,8 @@ export const Dashboard: React.FC = () => {
             <span className="text-xs font-semibold text-zinc-400">Current Streak</span>
             <Flame className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mb-1">7 Days</div>
-          <p className="text-xs text-amber-300 font-semibold">+11% projected improvement</p>
+          <div className="text-3xl font-extrabold text-white mb-1">{completedSessions.length ? `${completedSessions.length} Done` : '--'}</div>
+          <p className="text-xs text-amber-300 font-semibold">Calculated from completed sessions</p>
         </Card>
       </motion.div>
 

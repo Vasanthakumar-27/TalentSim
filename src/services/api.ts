@@ -21,11 +21,13 @@ type AuthResponse = {
   accessToken: string;
 };
 
-const request = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
+const request = async <T>(path: string, options: RequestInit = {}, authenticated = false): Promise<T> => {
+  const token = localStorage.getItem('talentsim-token');
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(authenticated && token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
@@ -51,3 +53,44 @@ export const authApi = {
       body: JSON.stringify({ name, email, password }),
     }),
 };
+
+  export type CreateInterviewInput = {
+    role: string;
+    company?: string;
+    interviewType: string;
+    difficulty: string;
+  };
+
+  export type CreateAnswerInput = {
+    questionText: string;
+    transcript: string;
+    wpm: number;
+    fillerCount: number;
+    pauseCount: number;
+    durationSeconds: number;
+  };
+
+  export const interviewsApi = {
+    create: (input: CreateInterviewInput) =>
+      request<{ id: string }>('/interviews', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }, true),
+    addAnswer: (sessionId: string, input: CreateAnswerInput) =>
+      request(`/interviews/${sessionId}/answers`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }, true),
+    complete: (sessionId: string) =>
+      request(`/interviews/${sessionId}/complete`, { method: 'POST' }, true),
+    list: () =>
+      request<Array<{
+        id: string;
+        role: string;
+        company: string | null;
+        interviewType: string;
+        status: string;
+        createdAt: string;
+        answers: Array<{ aiScore: number | null }>;
+      }>>('/interviews', { method: 'GET' }, true),
+  };

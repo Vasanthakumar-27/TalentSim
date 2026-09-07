@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { AuthPageShell } from '../components/auth/AuthPageShell';
 import { IllustrationDesk } from '../components/auth/IllustrationDesk';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../store/authStore';
 
 export const Login: React.FC = () => {
@@ -35,6 +35,14 @@ export const Login: React.FC = () => {
       leftContent={<IllustrationDesk />}
       rightContent={
         <div className="space-y-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#49545a] transition-colors hover:text-[#ff7a18]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
           <div className="space-y-3 text-[#1b2023]">
             <h1 className="text-[2.1rem] font-bold tracking-[-0.06em] leading-none">Welcome back</h1>
             <p className="text-[0.95rem] text-[#49545a]">

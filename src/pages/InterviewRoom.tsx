@@ -10,6 +10,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { useFaceTracking } from '../hooks/useFaceTracking';
 import { useRecorder } from '../hooks/useRecorder';
+import { interviewsApi } from '../services/api';
 import { useInterviewStore } from '../store/interviewStore';
 import { getQuestionsForCompany } from '../data/companyQuestions';
 import {
@@ -340,10 +341,14 @@ export const InterviewRoom: React.FC = () => {
     addQuestion,
     commitAnswer,
     startSession,
+    setSessionId,
+    setEyeContactScore,
     setRecordingUrl,
   } = useInterviewStore();
 
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [answerError, setAnswerError] = useState('');
+  const answerStartedAt = React.useRef<number | null>(null);
 
   const staticQuestions = React.useMemo(
     () => [
@@ -365,6 +370,25 @@ export const InterviewRoom: React.FC = () => {
     }
   }, [addQuestion, config.company, startSession, staticQuestions]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const createRemoteSession = async () => {
+      try {
+        const session = await interviewsApi.create({
+          role: config.role,
+          company: config.company,
+          interviewType: config.interviewType,
+          difficulty: config.difficulty,
+        });
+        if (!cancelled) setSessionId(session.id);
+      } catch {
+        if (!cancelled) setAnswerError('Could not connect to the interview service. Your local session is still available.');
+      }
+    };
+    void createRemoteSession();
+    return () => { cancelled = true; };
+  }, [config.company, config.difficulty, config.interviewType, config.role, setSessionId]);
+
   // Sync Audio Level Analyzer with Media Stream
   useEffect(() => {
     if (stream && micEnabled) {
@@ -373,6 +397,10 @@ export const InterviewRoom: React.FC = () => {
       stopAnalysis();
     }
   }, [stream, micEnabled, startAnalysis, stopAnalysis]);
+
+  useEffect(() => {
+    setEyeContactScore(eyeContactScore);
+  }, [eyeContactScore, setEyeContactScore]);
 
   // Auto-read question aloud when room is ready
   const currentQ = questions[currentQuestionIndex] || staticQuestions[currentQuestionIndex];
@@ -400,8 +428,10 @@ export const InterviewRoom: React.FC = () => {
   };
 
   const handleStartAnswering = () => {
+    setAnswerError('');
     stopSpeaking();
     resetTranscript();
+    answerStartedAt.current = Date.now();
     setSessionState('LISTENING');
     startListening();
     if (stream) {
@@ -410,6 +440,12 @@ export const InterviewRoom: React.FC = () => {
   };
 
   const handleFinishAnswer = async () => {
+    const transcript = finalTranscript.trim() || interimTranscript.trim();
+    if (!transcript) {
+      setAnswerError('No spoken answer was captured. Please answer the question before submitting.');
+      return;
+    }
+
     stopListening();
     setSessionState('PROCESSING');
 
@@ -418,27 +454,56 @@ export const InterviewRoom: React.FC = () => {
       setRecordingUrl(videoUrl);
     }
 
-    setTimeout(() => {
+    const durationSeconds = Math.max(1, Math.round((Date.now() - (answerStartedAt.current || Date.now())) / 1000));
+    const answer = {
+      questionText: currentQ,
+      questionType: config.interviewType,
+      transcript,
+      wpm,
+      fillerCount: fillers.count,
+      pauseCount,
+      durationSeconds,
+    };
+
+    try {
+      const remoteSessionId = useInterviewStore.getState().sessionId;
+      if (remoteSessionId && !remoteSessionId.startsWith('session_')) {
+        await interviewsApi.addAnswer(remoteSessionId, {
+          questionText: answer.questionText,
+          transcript: answer.transcript,
+          wpm: answer.wpm,
+          fillerCount: answer.fillerCount,
+          pauseCount: answer.pauseCount,
+          durationSeconds: answer.durationSeconds,
+        });
+      }
       commitAnswer({
-        questionText: currentQ,
-        questionType: config.interviewType,
-        transcript: finalTranscript || interimTranscript || 'Answer transcript placeholder.',
-        wpm: wpm || 135,
-        fillerCount: fillers.count,
-        pauseCount: pauseCount,
-        durationSeconds: 15,
+        questionText: answer.questionText,
+        questionType: answer.questionType,
+        transcript: answer.transcript,
+        wpm: answer.wpm,
+        fillerCount: answer.fillerCount,
+        pauseCount: answer.pauseCount,
+        durationSeconds: answer.durationSeconds,
       });
       setSessionState('FOLLOW_UP');
-    }, 2000);
+    } catch {
+      setSessionState('LISTENING');
+      setAnswerError('Your answer could not be saved. Check your connection and try again.');
+    }
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       setSessionState('QUESTION');
       useInterviewStore.setState((state) => ({
         currentQuestionIndex: state.currentQuestionIndex + 1,
       }));
     } else {
+      const remoteSessionId = useInterviewStore.getState().sessionId;
+      if (remoteSessionId && !remoteSessionId.startsWith('session_')) {
+        await interviewsApi.complete(remoteSessionId);
+      }
       navigate('/interview/report');
     }
   };
@@ -562,6 +627,7 @@ export const InterviewRoom: React.FC = () => {
                 ? 'Processing response parameters, STAR alignment, and filler frequency...'
                 : 'Click "Start Answering Response" below to respond via microphone.'}
             </p>
+            {answerError && <p className="text-xs text-rose-400">{answerError}</p>}
           </div>
         </div>
 
@@ -744,7 +810,7 @@ export const InterviewRoom: React.FC = () => {
               onClick={handleFinishAnswer}
               leftIcon={<CheckCircle2 className="w-4 h-4" />}
             >
-              Submit & Complete Answer
+              I Have Conveyed My Answer
             </Button>
           )}
 
