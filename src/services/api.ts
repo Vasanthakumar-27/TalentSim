@@ -1,4 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const API_BASE_URL = configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:4000/api' : '');
+
+const ensureApiUrl = () => {
+  if (!API_BASE_URL) {
+    throw new Error('Backend API is not configured. Set VITE_API_URL in the deployed frontend service.');
+  }
+};
 
 export class ApiError extends Error {
   readonly status: number;
@@ -22,6 +29,7 @@ type AuthResponse = {
 };
 
 const request = async <T>(path: string, options: RequestInit = {}, authenticated = false): Promise<T> => {
+  ensureApiUrl();
   const token = localStorage.getItem('talentsim-token');
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,

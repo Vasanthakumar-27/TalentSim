@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { AuthPageShell } from '../components/auth/AuthPageShell';
@@ -8,12 +8,16 @@ import { useAuth } from '../store/authStore';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, authError } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (authError) setError(authError);
+  }, [authError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +28,7 @@ export const Register: React.FC = () => {
     setIsLoading(false);
 
     if (!ok) {
-      setError('Please enter your name, a valid email, and a password with at least 6 characters.');
+      setError(authError || 'Please enter your name, a valid email, and a password with at least 6 characters.');
       return;
     }
 

@@ -9,6 +9,12 @@ import {
 export const Settings: React.FC = () => {
   const [selectedVoice, setSelectedVoice] = useState('Sarah (Professional Lead)');
   const [videoQuality, setVideoQuality] = useState('1080p HD (High Accuracy)');
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    localStorage.setItem('talentsim-settings', JSON.stringify({ voice: selectedVoice, videoQuality }));
+    setSaved(true);
+  };
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -61,8 +67,8 @@ export const Settings: React.FC = () => {
         </div>
       </Card>
 
-      <Button variant="primary" size="md" glow>
-        Save Settings
+      <Button variant="primary" size="md" glow onClick={handleSave}>
+        {saved ? 'Settings Saved' : 'Save Settings'}
       </Button>
     </div>
   );

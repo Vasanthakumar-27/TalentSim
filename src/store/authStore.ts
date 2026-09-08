@@ -10,6 +10,7 @@ export type AuthUser = {
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  authError: string;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -40,6 +41,7 @@ const readStoredUser = (): AuthUser | null => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     setUser(readStoredUser());
@@ -56,14 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isAuthenticated: Boolean(user),
+    authError,
     login: async (email, password) => {
+      setAuthError('');
       try {
         const response = await authApi.login(email, password);
         localStorage.setItem(TOKEN_KEY, response.accessToken);
         setUser(response.user);
         return true;
       } catch (error) {
-        if (error instanceof ApiError) return false;
+        if (error instanceof ApiError) {
+          setAuthError(error.message);
+          return false;
+        }
+        setAuthError(error instanceof Error ? error.message : 'Unable to connect to the backend.');
+        if (!import.meta.env.DEV) return false;
         // Keep the local demo flow usable before the API environment is configured.
       }
       const stored = readStoredUser();
@@ -74,6 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     },
     register: async (name, email, password) => {
+      setAuthError('');
       const trimmedName = normalizeName(name);
       const trimmedEmail = normalizeEmail(email);
       if (!trimmedName || !trimmedEmail || !password || password.length < 6) return false;
@@ -84,7 +94,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(response.user);
         return true;
       } catch (error) {
-        if (error instanceof ApiError) return false;
+        if (error instanceof ApiError) {
+          setAuthError(error.message);
+          return false;
+        }
+        setAuthError(error instanceof Error ? error.message : 'Unable to connect to the backend.');
+        if (!import.meta.env.DEV) return false;
         // Keep the local demo flow usable before the API environment is configured.
       }
 
@@ -96,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(TOKEN_KEY);
       setUser(null);
     },
-  }), [user]);
+  }), [authError, user]);
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };

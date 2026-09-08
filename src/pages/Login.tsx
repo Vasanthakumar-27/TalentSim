@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { AuthPageShell } from '../components/auth/AuthPageShell';
@@ -8,11 +8,15 @@ import { useAuth } from '../store/authStore';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, authError } = useAuth();
   const [email, setEmail] = useState('vasanth@talentsim.ai');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (authError) setError(authError);
+  }, [authError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +27,7 @@ export const Login: React.FC = () => {
     setIsLoading(false);
 
     if (!ok) {
-      setError('Use a valid registered email and password (minimum 6 characters).');
+      setError(authError || 'Use a valid registered email and password (minimum 6 characters).');
       return;
     }
 
@@ -80,7 +84,11 @@ export const Login: React.FC = () => {
                   <Lock className="h-3.5 w-3.5 text-[#1b2023]" />
                   Password
                 </label>
-                <button type="button" className="text-xs font-medium text-[#ff7a18] hover:text-[#e8690c]">
+                <button
+                  type="button"
+                  onClick={() => setError('Password reset is not configured yet. Please create a new account or contact support.')}
+                  className="text-xs font-medium text-[#ff7a18] hover:text-[#e8690c]"
+                >
                   Forgot?
                 </button>
               </div>

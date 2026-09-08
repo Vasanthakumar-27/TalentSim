@@ -22,6 +22,7 @@ export const InterviewReport: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'recruiter' | 'replay' | 'breakdown'>('recruiter');
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimelineIndex, setCurrentTimelineIndex] = useState(0);
+  const [actionMessage, setActionMessage] = useState('');
 
   // Read state from Zustand interview store
   const { config, answers, eyeContactScore, recordingUrl } = useInterviewStore();
@@ -107,13 +108,40 @@ export const InterviewReport: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" leftIcon={<Share2 className="w-4 h-4" />}>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Share2 className="w-4 h-4" />}
+            onClick={async () => {
+              const shareData = { title: 'TalentSim Interview Report', text: `Interview score: ${overallScore}%` };
+              if (navigator.share) await navigator.share(shareData);
+              else await navigator.clipboard.writeText(`${shareData.title}\n${shareData.text}`);
+              setActionMessage('Report link copied to clipboard.');
+            }}
+          >
             Share Feedback
           </Button>
-          <Button variant="primary" size="sm" glow leftIcon={<Download className="w-4 h-4" />}>
-            Export PDF Report
+          <Button
+            variant="primary"
+            size="sm"
+            glow
+            leftIcon={<Download className="w-4 h-4" />}
+            onClick={() => {
+              const report = `TalentSim Interview Report\nRole: ${config.role}\nOverall score: ${overallScore}%\nAverage WPM: ${avgWpm}\nFiller words: ${totalFillers}`;
+              const blob = new Blob([report], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'talentsim-interview-report.txt';
+              link.click();
+              URL.revokeObjectURL(url);
+              setActionMessage('Report downloaded.');
+            }}
+          >
+            Export Report
           </Button>
         </div>
+        {actionMessage && <p className="text-xs text-orange-300">{actionMessage}</p>}
       </div>
 
       {/* Main Score Cards */}
