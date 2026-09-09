@@ -150,7 +150,7 @@ export const InterviewReport: React.FC = () => {
           <div className="text-xs font-semibold text-zinc-400 mb-1">Overall Interview Score</div>
           <div className="text-4xl font-extrabold text-white">{overallScore}%</div>
           <ProgressBar value={overallScore} variant="gradient" size="sm" className="my-2" />
-          <span className="text-xs text-emerald-400 font-medium">Top 10% Candidate Pool</span>
+          <span className="text-xs text-zinc-400 font-medium">Calculated from this session</span>
         </Card>
 
         <Card hoverGlow>
@@ -168,7 +168,9 @@ export const InterviewReport: React.FC = () => {
         <Card hoverGlow>
           <div className="text-xs font-semibold text-zinc-400 mb-1">Recruiter Signal</div>
           <div className="mt-1">
-            <Badge variant="green" size="md">STRONG HIRE</Badge>
+            <Badge variant={overallScore >= 85 ? 'green' : overallScore >= 70 ? 'blue' : 'amber'} size="md">
+              {answers.length ? (overallScore >= 85 ? 'STRONG HIRE' : overallScore >= 70 ? 'HIRE' : 'NEEDS PRACTICE') : 'AWAITING ANSWERS'}
+            </Badge>
           </div>
           <p className="text-xs text-zinc-400 mt-2">High role alignment</p>
         </Card>
@@ -217,7 +219,7 @@ export const InterviewReport: React.FC = () => {
                 <Badge variant="blue" icon={<UserCheck className="w-4 h-4" />}>
                   Hiring Manager Lens
                 </Badge>
-                <h2 className="text-2xl font-bold text-white mt-2">Recruiter Decision: STRONG HIRE</h2>
+                <h2 className="text-2xl font-bold text-white mt-2">Recruiter Decision</h2>
                 <p className="text-xs text-zinc-400">
                   Based on comparison against expected skill profiles for Senior Frontend Engineers at tier-1 tech firms.
                 </p>

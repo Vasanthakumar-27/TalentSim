@@ -62,6 +62,28 @@ export const authApi = {
     }),
 };
 
+export const storageApi = {
+  uploadResume: async (file: File) => {
+    ensureApiUrl();
+    const token = localStorage.getItem('talentsim-token');
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${API_BASE_URL}/storage/resume`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as { message?: string | string[] } | null;
+      const message = Array.isArray(body?.message) ? body.message.join(', ') : body?.message;
+      throw new ApiError(message || 'Resume upload failed', response.status);
+    }
+
+    return response.json() as Promise<{ id: string; fileName: string; storagePath: string }>;
+  },
+};
+
   export type CreateInterviewInput = {
     role: string;
     company?: string;

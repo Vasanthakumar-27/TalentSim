@@ -10,6 +10,7 @@ export type AuthUser = {
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isAuthReady: boolean;
   authError: string;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
@@ -23,6 +24,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const normalizeName = (value: string) => value.trim() || 'TalentSim User';
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
+
+const hasStoredToken = () => Boolean(localStorage.getItem(TOKEN_KEY));
 
 const readStoredUser = (): AuthUser | null => {
   try {
@@ -40,12 +43,12 @@ const readStoredUser = (): AuthUser | null => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const storedUser = readStoredUser();
+    return storedUser && (hasStoredToken() || import.meta.env.DEV) ? storedUser : null;
+  });
+  const [isAuthReady] = useState(true);
   const [authError, setAuthError] = useState('');
-
-  useEffect(() => {
-    setUser(readStoredUser());
-  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -58,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isAuthenticated: Boolean(user),
+    isAuthReady,
     authError,
     login: async (email, password) => {
       setAuthError('');
@@ -109,9 +113,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     logout: () => {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(STORAGE_KEY);
       setUser(null);
     },
-  }), [authError, user]);
+  }), [authError, isAuthReady, user]);
 
   return React.createElement(AuthContext.Provider, { value }, children);
 };

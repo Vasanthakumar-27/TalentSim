@@ -115,7 +115,7 @@ export const Dashboard: React.FC = () => {
             Good Evening, <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-200 bg-clip-text text-transparent">{user?.name || 'TalentSim User'} 👋</span>
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-slate-300">
-            You're on a <span className="font-semibold text-amber-300"><Flame className="mr-1 inline h-3.5 w-3.5 text-amber-300" />7-day practice streak</span>. Your readiness index rose +4% this week and your mock interview confidence is trending upward.
+            Review your saved interviews, track measured communication signals, and start your next practice session.
           </p>
         </div>
 
@@ -154,9 +154,9 @@ export const Dashboard: React.FC = () => {
             <span className="text-xs font-semibold text-zinc-400">Today's Goal</span>
             <Target className="w-4 h-4 text-amber-300" />
           </div>
-          <div className="text-sm font-bold text-white mb-2">Complete HR & Technical Round</div>
-          <ProgressBar value={50} variant="purple" size="sm" className="mb-2" />
-          <span className="text-xs text-zinc-400">1 of 2 interviews completed</span>
+          <div className="text-sm font-bold text-white mb-2">Complete your next interview</div>
+          <ProgressBar value={completedSessions.length ? 100 : 0} variant="purple" size="sm" className="mb-2" />
+          <span className="text-xs text-zinc-400">{completedSessions.length} completed in this account</span>
         </Card>
 
         {/* Session Count */}
@@ -169,14 +169,14 @@ export const Dashboard: React.FC = () => {
           <p className="text-xs text-zinc-400">Saved interview sessions</p>
         </Card>
 
-        {/* Practice Streak */}
+        {/* Completed Sessions */}
         <Card hoverGlow className="border-amber-500/20 bg-gradient-to-br from-amber-500/8 via-slate-900 to-slate-950">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-semibold text-zinc-400">Current Streak</span>
+            <span className="text-xs font-semibold text-zinc-400">Completed Sessions</span>
             <Flame className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mb-1">{completedSessions.length ? `${completedSessions.length} Done` : '--'}</div>
-          <p className="text-xs text-amber-300 font-semibold">Calculated from completed sessions</p>
+          <div className="text-3xl font-extrabold text-white mb-1">{completedSessions.length}</div>
+          <p className="text-xs text-amber-300 font-semibold">Persisted interview results</p>
         </Card>
       </motion.div>
 

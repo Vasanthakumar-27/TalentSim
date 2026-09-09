@@ -32,7 +32,8 @@ const LoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAuthReady } = useAuth();
+  if (!isAuthReady) return <LoadingFallback />;
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 

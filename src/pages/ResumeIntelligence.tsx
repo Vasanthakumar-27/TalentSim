@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { extractTextFromPDF, parseResumeSkills, type ParsedResume } from '../services/resumeParser';
+import { storageApi } from '../services/api';
 import { useInterviewStore } from '../store/interviewStore';
 import {
   Upload,
@@ -25,13 +26,14 @@ export const ResumeIntelligence: React.FC = () => {
   const { setConfig, addQuestion } = useInterviewStore();
 
   const [isUploading, setIsUploading] = useState(false);
-  const [fileName, setFileName] = useState<string>('Vasanth_Resume_2026.pdf');
+  const [fileName, setFileName] = useState<string>('No resume uploaded');
+  const [uploadMessage, setUploadMessage] = useState('');
   const [parsedData, setParsedData] = useState<ParsedResume>({
     rawText: '',
-    skills: ['React', 'TypeScript', 'Node.js', 'Python', 'PostgreSQL', 'Docker'],
-    suggestedRole: 'Senior Frontend Developer',
-    strengthScore: 84,
-    extractedProjects: ['Real-Time Collaborative Code Editor', 'Predictive Candidate Scoring Model'],
+    skills: [],
+    suggestedRole: 'Upload a resume to detect a role',
+    strengthScore: 0,
+    extractedProjects: [],
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +42,15 @@ export const ResumeIntelligence: React.FC = () => {
 
     try {
       setIsUploading(true);
+      setUploadMessage('');
       setFileName(file.name);
+
+      try {
+        await storageApi.uploadResume(file);
+        setUploadMessage('Resume uploaded securely.');
+      } catch {
+        setUploadMessage('Resume parsed locally, but cloud upload failed.');
+      }
 
       let text = '';
       if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
@@ -128,8 +138,11 @@ export const ResumeIntelligence: React.FC = () => {
                 <FileText className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span className="font-mono text-zinc-200 truncate">{fileName}</span>
               </div>
-              <Badge variant="green" size="sm">Loaded</Badge>
+              <Badge variant={fileName === 'No resume uploaded' ? 'amber' : 'green'} size="sm">
+                {fileName === 'No resume uploaded' ? 'Waiting' : 'Loaded'}
+              </Badge>
             </div>
+            {uploadMessage && <p className="text-xs text-zinc-400">{uploadMessage}</p>}
             <Button variant="primary" size="sm" className="w-full justify-center" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} isLoading={isUploading}>
               Choose PDF File
             </Button>
